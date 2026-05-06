@@ -1,56 +1,64 @@
 #!/usr/bin/env python3 
 
-import sys
+import argparse
 import subprocess
 from pathlib import Path
 
 def run():
-    #checking if Make/CMake are present in the wd(project mode)
-    if Path("Makefile").exists():
-        print("--- Makefile detected. Running 'make' ---")
-        subprocess.run(["make"])
-        return
+    parser = argparse.ArgumentParser(description="Universal compiler and runner")
+    parser.add_argument("file", nargs="?", help="File for running")
+    parser.add_argument("-b", "--build", action="store_true", help="Build-only (Go/Haskell)")
+    
+    args = parser.parse_args()
 
+    #Project Mode
     if Path("CMakeLists.txt").exists():
-        print("--- CMake project detected. Building... ---")
-        Path("build").mkdir(exist_ok=True)
-        subprocess.run(["cmake", "-S", ".", "-B", "build"])
-        subprocess.run(["cmake", "--build", "build"])
+        print("--> CMake detected. Building...")
+        subprocess.run("cmake -S . -B build && cmake --build build", shell=True)
         return
 
-    #single file mode 
-    if len(sys.argv) < 2:
-        print("Using crn <file>")
+    if Path("Makefile").exists():
+        print("--> Makefile detected. Initiating make...")
+        subprocess.run("make", shell=True)
         return
 
-    file_path = Path(sys.argv[1])
-
-    if not file_path.exists():
-        print(f"File {file_path} not found...")
+    #Single File Mode
+    if not args.file:
+        print("Error: no file or no buildind instructions specified (Makefile/CMake).")
         return
 
-    ext = file_path.suffix
-    name = file_path.stem
-
-    commands = {
-        ".c": [f"gcc -Wall {file_path} -o {name}", f"./{name}"],
-        ".cpp": [f"g++ -Wall {file_path} -o {name}", f"./{name}"],
-        ".py": [f"python3 {file_path}"],
-        ".rs": [f"rustc {file_path}", f"./{name}"],
-        ".go": [f"go run {file_path}"],
-        ".hs": [f"ghc --make {file_path} -o {name}", f"./{name}"],
-        ".qmd": [f"quarto render {file_path}"]
-    }
-
-    if ext not in commands:
-        print(f"Extention {ext} not supported")
+    path = Path(args.file)
+    if not path.exists():
+        print(f"File {path} not found.")
         return
 
-    for cmd in commands[ext]:
-        print(f"-> Executing {cmd}")
-        result = subprocess.run(cmd, shell = True)
-        if result.returncode != 0:
-            break
+    ext = path.suffix
+    name = path.stem
+
+    # Logic
+    match ext:
+        case ".c" | "cpp":
+            compiler = "gcc" if ext == ".c" else ".g++"
+            cmd = f"{compiler} -Wall {path} -o {name} && ./{name}"
+
+        case ".py":
+            cmd = f"python3 {path}"
+
+        case ".hs":
+        # Haskell always requires compilation
+            cmd = f"ghc --make {path} -o {name}"
+            if not args.build:
+            cmd += f" && ./{name}"
+
+        case ".go":
+                cmd = f"go build {path}" if args.build else f"go run {path}"
+
+        case _:
+            print(f"Format {ext} not yet implemented")
+            return
+
+    print(f"--> Initiating: {cmd}")
+    subprocess.run(cmd, shell=True)
 
 if __name__ == "__main__":
     run()
