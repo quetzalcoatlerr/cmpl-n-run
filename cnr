@@ -5,6 +5,20 @@ import subprocess
 from pathlib import Path
 
 def run():
+    #checking if Make/CMake are present in the wd(project mode)
+    if Path("Makefile").exists():
+        print("--- Makefile detected. Running 'make' ---")
+        subprocess.run(["make"])
+        return
+
+    if Path("CMakeLists.txt").exists():
+        print("--- CMake project detected. Building... ---")
+        Path("build").mkdir(exist_ok=True)
+        subprocess.run(["cmake", "-S", ".", "-B", "build"])
+        subprocess.run(["cmake", "--build", "build"])
+        return
+
+    #single file mode 
     if len(sys.argv) < 2:
         print("Using crn <file>")
         return
@@ -24,6 +38,7 @@ def run():
         ".py": [f"python3 {file_path}"],
         ".rs": [f"rustc {file_path}", f"./{name}"],
         ".go": [f"go run {file_path}"],
+        ".hs": [f"ghc --make {file_path} -o {name}", f"./{name}"],
         ".qmd": [f"quarto render {file_path}"]
     }
 
