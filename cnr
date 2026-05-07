@@ -48,7 +48,7 @@ def run():
         # Haskell always requires compilation
             cmd = f"ghc --make {path} -o {name}"
             if not args.build:
-            cmd += f" && ./{name}"
+                cmd += f" && ./{name}"
 
         case ".go":
             cmd = f"go build {path}" if args.build else f"go run {path}"
