@@ -51,7 +51,10 @@ def run():
             cmd += f" && ./{name}"
 
         case ".go":
-                cmd = f"go build {path}" if args.build else f"go run {path}"
+            cmd = f"go build {path}" if args.build else f"go run {path}"
+
+        case ".qmd":
+            cmd = f"quarto render {path}"
 
         case _:
             print(f"Format {ext} not yet implemented")
