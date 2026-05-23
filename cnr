@@ -24,7 +24,7 @@ def run():
 
     #Single File Mode
     if not args.file:
-        print("Error: no file or no buildind instructions specified (Makefile/CMake).")
+        print("Error: no file or no building instructions specified (Makefile/CMake).")
         return
 
     path = Path(args.file)
